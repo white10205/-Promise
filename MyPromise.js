@@ -60,6 +60,37 @@ class MyPromise {
   }
 
   /**
+   * 根据实际情况，执行队列
+   */
+  _runHandlers() {
+    if (this._state === PEDING) {
+      // 目前任务仍在挂起
+      return;
+    }
+
+    // 错误写法，容易导致意想不到的结果
+    /* for (let handler of this._handlers) {
+      this._runOneHandler(handler);
+      this._handlers.shift();
+    } */
+
+    // 正确写法，运行完毕一个之后删除一个
+    while (this._handlers[0]) {
+      const handler = this._handlers[0];
+      this._runOneHandler(handler);
+      this._handlers.shift();
+    }
+  }
+
+  /**
+   * 处理一个handler
+   * @param {Object} handler
+   */
+  _runOneHandler(handler) {
+
+  }
+
+  /**
    * @param {Function} onFulfilled
    * @param {Function} onRejected
    */
@@ -67,6 +98,7 @@ class MyPromise {
     return new MyPromise((resolve, reject) => {
       this._pushHandler(onFulfilled, FULFILLED, resolve, reject);
       this._pushHandler(onRejected, REJECTED, resolve, reject);
+      this._runHandlers(); // 执行队列
     });
   }
 
@@ -82,6 +114,7 @@ class MyPromise {
     }
     this._state = state;
     this._value = value;
+    this._runHandlers(); // 状态变化，执行微任务队列函数
   }
 
   /**
@@ -103,13 +136,11 @@ class MyPromise {
 }
 
 const pro = new MyPromise((resolve, reject) => {
-  setTimeout(() => {
-    resolve();
-  }, 1000);
+  resolve(1);
 });
 
-pro.then(() => {
-  console.log(222);
+pro.then(function A1() {
+  console.log(1111);
 });
 
 console.log(pro);
