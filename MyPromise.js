@@ -187,6 +187,35 @@ class MyPromise {
   _reject(reason) {
     this._changeState(REJECTED, reason);
   }
+
+  /**
+   * 返回一个已完成的Promise
+   * @param {any} data
+   * @returns
+   */
+  static resolve(data) {
+    if (data instanceof MyPromise) {
+      return data;
+    }
+    return new MyPromise ((resolve, reject) => {
+      if (isPromise(data)) {
+        data.then(resolve, reject);
+      } else {
+        resolve(data);
+      }
+    });
+  }
+
+  /**
+   * 返回一个拒绝的Promise
+   * @param {any} data
+   * @returns
+   */
+  static resolve(reason) {
+    return new MyPromise ((resolve, reject) => {
+      reject(reason)
+    });
+  }
 }
 
 /* const pro1 = new MyPromise((resolve, reject) => {
@@ -229,4 +258,3 @@ const pro2 = pro.finally((data) => {
 setTimeout(() => {
   console.log(pro2);
 });
-
