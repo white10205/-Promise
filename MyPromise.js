@@ -132,6 +132,31 @@ class MyPromise {
   }
 
   /**
+   * 仅失败的场景
+   * @param {Function} onRejected
+   */
+  catch(onRejected) {
+    return this.then(null, onRejected);
+  }
+
+  /**
+   * 无论成功还是失败都会执行回调
+   * @param {Function} onSettled
+   */
+  finally(onSettled) {
+    return this.then(
+      (data) => {
+        onSettled();
+        return data;
+      },
+      (reason) => {
+        onSettled();
+        throw reason;
+      }
+    );
+  }
+
+  /**
    * 改变任务状态
    * @param {String} state 新状态
    * @param {any} value 新数据
@@ -177,11 +202,10 @@ pro1
   })
   .then((data) => {
     console.log(data);
-  }); 
-*/
+  });  */
 
 // 互操作
-function delay(duration) {
+/* function delay(duration) {
   return new MyPromise((resolve) => {
     setTimeout(resolve, duration);
   });
@@ -191,4 +215,18 @@ function delay(duration) {
   console.log("start");
   await delay(2000);
   console.log("ok");
-})();
+})(); */
+
+const pro = new MyPromise((resolve, reject) => {
+  resolve(1);
+});
+
+const pro2 = pro.finally((data) => {
+  console.log("finally", data);
+  return 123;
+});
+
+setTimeout(() => {
+  console.log(pro2);
+});
+

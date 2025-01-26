@@ -22,3 +22,7 @@
 ### 第五步
 1. 手写判断是否是Promise方法，无需根据instanceof判断原型链，为了保持函数始终返回Boolean类型，使用双感叹号保持。
 2. 完成_runOneHandler核心方法的编写，并且能够与内置Promise互相操作，能够使用async和await方法，剩下Promise的静态方法未编写
+
+### 第六步
+1. 完成catch方法（实例方法），需要先创建Promise对象才能调用的。
+2. 完成finally方法，同样是实例方法。
