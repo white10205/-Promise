@@ -26,6 +26,15 @@ function runMicroTask(callBack) {
   }
 }
 
+/**
+ * 判断一个对象是否是Promise
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+function isPromise(obj) {
+  return !!(obj && typeof obj === "object" && typeof obj.then === "function");
+}
+
 class MyPromise {
   /**
    * 创建一个Promise
@@ -39,6 +48,7 @@ class MyPromise {
       // 绑定this指向，让其始终指向当前Promise对象
       executor(this._resolve.bind(this), this._reject.bind(this));
     } catch (err) {
+      console.log("内部发生错误");
       this._reject(err);
     }
   }
@@ -86,8 +96,27 @@ class MyPromise {
    * 处理一个handler
    * @param {Object} handler
    */
-  _runOneHandler(handler) {
-
+  _runOneHandler({ executor, state, resolve, reject }) {
+    runMicroTask(() => {
+      if (this._state !== state) {
+        //状态不一致，不做处理
+        return;
+      }
+      if (typeof executor !== "function") {
+        // 传递的并非函数
+        this._state === FULFILLED ? resolve(this._value) : reject(this._value);
+      }
+      try {
+        const result = executor(this._value);
+        if (isPromise(result)) {
+          result.then(resolve, reject);
+        } else {
+          resolve(result);
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**
@@ -135,12 +164,31 @@ class MyPromise {
   }
 }
 
-const pro = new MyPromise((resolve, reject) => {
+/* const pro1 = new MyPromise((resolve, reject) => {
   resolve(1);
 });
 
-pro.then(function A1() {
-  console.log(1111);
-});
+pro1
+  .then((data) => {
+    console.log(data);
+    return new Promise((resolve, reject) => {
+      resolve(2);
+    });
+  })
+  .then((data) => {
+    console.log(data);
+  }); 
+*/
 
-console.log(pro);
+// 互操作
+function delay(duration) {
+  return new MyPromise((resolve) => {
+    setTimeout(resolve, duration);
+  });
+}
+
+(async function () {
+  console.log("start");
+  await delay(2000);
+  console.log("ok");
+})();
