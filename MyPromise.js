@@ -44,6 +44,7 @@ class MyPromise {
     this._state = PEDING;
     this._value = undefined;
     this._handlers = []; // 处理函数形成的队列
+    
     try {
       // 绑定this指向，让其始终指向当前Promise对象
       executor(this._resolve.bind(this), this._reject.bind(this));
@@ -115,6 +116,7 @@ class MyPromise {
         }
       } catch (error) {
         reject(error);
+        console.log(error);
       }
     });
   }
@@ -197,7 +199,7 @@ class MyPromise {
     if (data instanceof MyPromise) {
       return data;
     }
-    return new MyPromise ((resolve, reject) => {
+    return new MyPromise((resolve, reject) => {
       if (isPromise(data)) {
         data.then(resolve, reject);
       } else {
@@ -211,50 +213,90 @@ class MyPromise {
    * @param {any} data
    * @returns
    */
-  static resolve(reason) {
-    return new MyPromise ((resolve, reject) => {
-      reject(reason)
+  static reject(reason) {
+    return new MyPromise((resolve, reject) => {
+      reject(reason);
+    });
+  }
+
+  /**
+   * 返回一个Promise
+   * @param {Iterator} proms
+   */
+  static all(proms) {
+    return new MyPromise((resolve, reject) => {
+      try {
+        const result = [];
+        let count = 0;
+        let length = proms.length;
+        if (length === 0) {
+          resolve(result);
+        }
+        for (let i = 0; i < length; i++) {
+          const p = proms[i];
+          MyPromise.resolve(p).then((data) => {
+            count++;
+            result[i] = data;
+            if (count === length) {
+              resolve(result);
+            }
+          }, reject);
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * 等待所有的Promise有结果之后
+   * 该方法返回的Promise完成
+   * 并按照顺序将所有结果汇总
+   * @param {iterator} proms
+   */
+  static allSettled(proms) {
+    const ps = [];
+    for (const p of proms) {
+      ps.push(
+        MyPromise.resolve(p).then(
+          (value) => ({ status: "FULFIILED", value }),
+          (reason) => ({
+            status: "RJECTED",
+            reason,
+          })
+        )
+      );
+    }
+    return MyPromise.all(ps);
+  }
+  /**
+   * 返回最先完成的那个Promise，不管是成功还是失败
+   * @param {iterator} proms
+   */
+  static race(proms) {
+    return new MyPromise((resolve, reject) => {
+      for (const p of proms) {
+        MyPromise.resolve(p).then(resolve, reject);
+      }
     });
   }
 }
 
-/* const pro1 = new MyPromise((resolve, reject) => {
-  resolve(1);
+const pro1 = new MyPromise((resolve, reject) => {
+  setTimeout(() => {
+    reject(1);
+  }, 1000);
 });
-
-pro1
-  .then((data) => {
-    console.log(data);
-    return new Promise((resolve, reject) => {
-      resolve(2);
-    });
-  })
-  .then((data) => {
-    console.log(data);
-  });  */
-
-// 互操作
-/* function delay(duration) {
-  return new MyPromise((resolve) => {
-    setTimeout(resolve, duration);
-  });
-}
-
-(async function () {
-  console.log("start");
-  await delay(2000);
-  console.log("ok");
-})(); */
-
-const pro = new MyPromise((resolve, reject) => {
-  resolve(1);
+const pro2 = new MyPromise((resolve, reject) => {
+  setTimeout(() => {
+    resolve(2);
+  }, 3000);
 });
-
-const pro2 = pro.finally((data) => {
-  console.log("finally", data);
-  return 123;
-});
-
-setTimeout(() => {
-  console.log(pro2);
+const pro3 = new MyPromise((resolve, reject)=>{
+  setTimeout(() => {
+    resolve(3)
+  }, 100);
+})
+MyPromise.race([pro1]).then((data) => {
+  console.log(data);
 });
